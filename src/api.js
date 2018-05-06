@@ -30,15 +30,23 @@ const apiFetch = (path, method = 'GET', body = null) => {
 
   // Call the API
   return fetch(`${API_ROOT}${path}`, options).then(response => {
+
+    // Store token if given in response headers
+    const authHeader = response.headers.get('authorization');
+    if (authHeader) {
+      const authArray = authHeader.split(' ');
+      if (authArray[0] === 'Bearer') {
+        localStorage.setItem('token', authArray[1]);
+      }
+    }
+
+    // Return JSON response with status code 
     return response.json().then(json => {
-      
-      // Wrap response json body with status code
       const status_json = {
         status: response.status,
         body: json
       };
-
-      // Reject promise if bad response
+      // Reject if bad response
       return response.ok ? status_json : Promise.reject(status_json);
     });
   });

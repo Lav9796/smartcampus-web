@@ -42,9 +42,8 @@ class App extends Component {
 
   // Clears current user if null given
   setCurrentUser(user = null) {
-    if (user && user.token !== null) {
+    if (user) {
       this.setState({ currentUser: user });
-      localStorage.setItem('token', user.token);
     } else {
       this.setState({ currentUser: null });
       localStorage.clear();
