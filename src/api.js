@@ -9,38 +9,89 @@ const API_ROOT = `${process.env.REACT_APP_API_URL}/api`;
  */
 const apiFetch = (path, method = 'GET', body = null) => {
 
-  const options = {
-    method,
-    headers: {
-      'Accept': 'application/json',
-      'Content-Type': 'application/json'
+    const options = {
+      method,
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      }
+    };
+
+    // Add POST/PUT body, if given
+    if (body) {
+      options.body = JSON.stringify(body);
     }
-  };
 
-  // Add POST/PUT body, if given
-  if (body) {
-    options.body = JSON.stringify(body);
-  }
+    // Add token as header, if in storage
+    const token = localStorage.getItem('token');
+    if (token) {
+      options.headers['Authorization'] = `Bearer ${token}`;
+    }
 
-  // Add token as header, if in storage
-  const token = localStorage.getItem('token');
-  if (token) {
-    options.headers['Authorization'] = `Bearer ${token}`;
-  }
+    // Call the API
+    return fetch(`${API_ROOT}${path}`, options).then(response => {
+      return response.json().then(json => {
+        console.log("json: " + JSON.stringify(json));
+        if (!response.ok && json.error === "token_expired") {
+          return refreshToken().then(() => {
+            const refreshedToken = localStorage.getItem('token');
+            if (refreshedToken) {
+              options.headers['Authorization'] = `Bearer ${refreshedToken}`;
+            }
+            return fetch(`${API_ROOT}${path}`, options).then(response => {
+              return response.json().then(json => {
+                // Wrap response json body with status code
+                const status_json = {
+                  status: response.status,
+                  body: json
+                };
 
-  // Call the API
-  return fetch(`${API_ROOT}${path}`, options).then(response => {
-    return response.json().then(json => {
-      
-      // Wrap response json body with status code
-      const status_json = {
-        status: response.status,
-        body: json
+                // Reject promise if bad response
+                return response.ok ? status_json : Promise.reject(status_json);
+              });
+            });
+          });
+        } else {
+          // Wrap response json body with status code
+          const status_json = {
+            status: response.status,
+            body: json
+          };
+
+          // Reject promise if bad response
+          return response.ok ? status_json : Promise.reject(status_json);
+        }
+      });
+    });
+};
+
+// Attempts to refresh the stored JWT token
+function refreshToken() {
+  return new Promise(function(resolve, reject){
+
+    const token = localStorage.getItem('token');
+    if (!token) {
+      reject(); // no token to refresh
+    } else {
+      const options = {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
       };
 
-      // Reject promise if bad response
-      return response.ok ? status_json : Promise.reject(status_json);
-    });
+      return fetch(`${API_ROOT}/user/refresh`, options).then(response => {
+        return response.json().then(json => {
+          if (response.ok) {
+            localStorage.setItem('token', json.user.token);
+            resolve();
+          } else {
+            reject({status: response.status, body: json});
+          }
+        });
+      });
+    }
   });
 };
 
