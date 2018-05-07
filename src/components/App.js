@@ -31,12 +31,6 @@ class App extends Component {
     api.Event.feed()
       .then((response) => {
         this.setState({ events: response.body.events });
-      }).catch((error) => {
-        alert("Unable to load events!");
-
-        if (!process.env.NODE_ENV || process.env.NODE_ENV === 'development') {
-          console.log(JSON.stringify(error));
-        }
       });
   }
 

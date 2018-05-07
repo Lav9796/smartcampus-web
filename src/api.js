@@ -8,91 +8,75 @@ const API_ROOT = `${process.env.REACT_APP_API_URL}/api`;
  * @return {Promise(Object)}  Response containing 'status' and 'body'
  */
 const apiFetch = (path, method = 'GET', body = null) => {
-
-    const options = {
-      method,
-      headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json'
-      }
-    };
-
-    // Add POST/PUT body, if given
-    if (body) {
-      options.body = JSON.stringify(body);
+  const options = {
+    method,
+    headers: {
+      'Accept': 'application/json',
+      'Content-Type': 'application/json'
     }
+  };
 
-    // Add token as header, if in storage
-    const token = localStorage.getItem('token');
-    if (token) {
-      options.headers['Authorization'] = `Bearer ${token}`;
-    }
+  // Add POST/PUT body, if given
+  if (body) {
+    options.body = JSON.stringify(body);
+  }
 
-    // Call the API
-    return fetch(`${API_ROOT}${path}`, options).then(response => {
-      return response.json().then(json => {
-        console.log("json: " + JSON.stringify(json));
-        if (!response.ok && json.error === "token_expired") {
-          return refreshToken().then(() => {
-            const refreshedToken = localStorage.getItem('token');
-            if (refreshedToken) {
-              options.headers['Authorization'] = `Bearer ${refreshedToken}`;
-            }
-            return fetch(`${API_ROOT}${path}`, options).then(response => {
-              return response.json().then(json => {
-                // Wrap response json body with status code
-                const status_json = {
-                  status: response.status,
-                  body: json
-                };
+  // Add token as header, if in storage
+  const token = localStorage.getItem('token');
+  if (token) {
+    options.headers['Authorization'] = `Bearer ${token}`;
+  }
 
-                // Reject promise if bad response
-                return response.ok ? status_json : Promise.reject(status_json);
-              });
-            });
-          });
-        } else {
-          // Wrap response json body with status code
-          const status_json = {
-            status: response.status,
-            body: json
-          };
-
-          // Reject promise if bad response
-          return response.ok ? status_json : Promise.reject(status_json);
-        }
-      });
-    });
-};
-
-// Attempts to refresh the stored JWT token
-function refreshToken() {
-  return new Promise(function(resolve, reject){
-
-    const token = localStorage.getItem('token');
-    if (!token) {
-      reject(); // no token to refresh
-    } else {
-      const options = {
-        method: 'POST',
-        headers: {
-          'Accept': 'application/json',
-          'Authorization': `Bearer ${token}`
-        }
+  // Call the API
+  return fetch(`${API_ROOT}${path}`, options).then(response => {
+    return response.json().then(json => {
+      
+      // Wrap response json body with status code
+      const status_json = {
+        status: response.status,
+        body: json
       };
 
-      return fetch(`${API_ROOT}/user/refresh`, options).then(response => {
-        return response.json().then(json => {
-          if (response.ok) {
-            localStorage.setItem('token', json.user.token);
-            resolve();
-          } else {
-            reject({status: response.status, body: json});
-          }
-        });
-      });
-    }
+      // Reject promise if bad response
+      return response.ok ? status_json : Promise.reject(status_json);
+    });
   });
+}
+
+var currentlyRefreshing = false;
+const apiFetchWithRefresh = (path, method = 'GET', body = null) => {
+
+  return apiFetch(path, method, body).catch(error => {
+    console.log(JSON.stringify(error));
+    if (error.body && error.body.error === "token_expired") {
+      if (currentlyRefreshing) {
+        // another request is currently refreshing the token, 
+        // so wait for it before re-calling api
+        return new Promise(resolve => {
+          var _refreshCheck = setInterval(function() {
+            if (!currentlyRefreshing) {
+              clearInterval(_refreshCheck);
+              apiFetch(path, method, body).then(resolve);
+            } 
+          }, 50);
+        });
+      } else {
+        // refresh the token and call api if successful
+        currentlyRefreshing = true;
+        return apiFetch('/user/refresh', 'POST').then(response => {
+          localStorage.setItem('token', response.body.user.token);
+          currentlyRefreshing = false;
+          return apiFetch(path, method, body);
+        }).catch(error => {
+          currentlyRefreshing = false;
+          throw error;
+        });
+      }
+    } 
+      
+    throw error;
+  });
+
 };
 
 //===================================================================
@@ -101,13 +85,13 @@ function refreshToken() {
 
 const requests = {
   del: path =>
-    apiFetch(path, 'DELETE'),
+    apiFetchWithRefresh(path, 'DELETE'),
   get: path =>
-    apiFetch(path, 'GET'),
+    apiFetchWithRefresh(path, 'GET'),
   put: (path, body) =>
-    apiFetch(path, 'PUT', body),
+    apiFetchWithRefresh(path, 'PUT', body),
   post: (path, body) =>
-    apiFetch(path, 'POST', body)
+    apiFetchWithRefresh(path, 'POST', body)
 };
 
 const User = {
