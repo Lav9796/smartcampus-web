@@ -71,8 +71,8 @@ const User = {
 };
 
 const Event = {
-  create: (title, time, location, link, body) =>
-    requests.post('/events', { event: { title, time, location, link, body } }),
+  create: (title, start_time, end_time, location, link, body) =>
+    requests.post('/events', { event: { title, start_time, end_time, location, link, body } }),
   delete: (id) =>
     requests.del('/events/' + id),
   get: (id) =>

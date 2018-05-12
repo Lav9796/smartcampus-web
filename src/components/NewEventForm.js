@@ -9,8 +9,10 @@ class NewEventForm extends Component {
 
     this.state = {
       title: '',
-      date: '',
-      time: '',
+      startDate: '',
+      startTime: '',
+      endDate: '',
+      endTime: '',
       location: '',
       link: '',
       body: '',
@@ -32,9 +34,10 @@ class NewEventForm extends Component {
   handleSubmit = event => {
     event.preventDefault();
 
-    const timestamp = this.state.date + ' ' + this.state.time + ':00';
+    const startTimestamp = this.state.startDate + ' ' + this.state.startTime + ':00';
+    const endTimestamp = this.state.endDate + ' ' + this.state.endTime + ':00';
 
-    this.props.postEvent(this.state.title, timestamp,
+    this.props.postEvent(this.state.title, startTimestamp, endTimestamp,
       this.state.location, this.state.link, this.state.body);
   }
 
@@ -51,19 +54,35 @@ class NewEventForm extends Component {
               onChange={this.handleChange}
             />
           </FormGroup>
-          <FormGroup controlId="date" bsSize="large">
-            <ControlLabel>Date</ControlLabel>
+          <FormGroup controlId="startDate" bsSize="large">
+            <ControlLabel>Start Date</ControlLabel>
             <FormControl
               type="date"
-              value={this.state.date}
+              value={this.state.startDate}
               onChange={this.handleChange}
             />
           </FormGroup>
-          <FormGroup controlId="time" bsSize="large">
-            <ControlLabel>Time</ControlLabel>
+          <FormGroup controlId="startTime" bsSize="large">
+            <ControlLabel>Start Time</ControlLabel>
             <FormControl
               type="time"
-              value={this.state.time}
+              value={this.state.startTime}
+              onChange={this.handleChange}
+            />
+          </FormGroup>
+          <FormGroup controlId="endDate" bsSize="large">
+            <ControlLabel>End Date</ControlLabel>
+            <FormControl
+              type="date"
+              value={this.state.endDate}
+              onChange={this.handleChange}
+            />
+          </FormGroup>
+          <FormGroup controlId="endTime" bsSize="large">
+            <ControlLabel>End Time</ControlLabel>
+            <FormControl
+              type="time"
+              value={this.state.endTime}
               onChange={this.handleChange}
             />
           </FormGroup>

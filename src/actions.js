@@ -51,11 +51,11 @@ export function fetchEvents() {
   }
 }
 
-export function postEvent(title, timestamp, location, link, body) {
+export function postEvent(title, startTimestamp, endTimestamp, location, link, body) {
   return dispatch => {
     dispatch({ 
       type: POST_EVENT,
-      payload: api.Event.create(title, timestamp, location, link, body)
+      payload: api.Event.create(title, startTimestamp, endTimestamp, location, link, body)
     }).then(res => {
       dispatch({ type: CLOSE_MODAL });
     });

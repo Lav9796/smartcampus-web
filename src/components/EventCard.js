@@ -15,11 +15,15 @@ class EventCard extends Component {
             <tr>
               <td>
                 <Panel.Body>
-                  <b>{event.time}</b>
-                  <br/>
-                  {event.location}
-                  <br/>
-                  <a href={event.link}>{event.link}</a>
+                  <center>
+                    <b>{event.start_time}</b>
+                    <br/> to <br/>
+                    <b>{event.end_time}</b>
+                    <br/>
+                    at <b>{event.location}</b>
+                    <br/>
+                    <a href={event.link}>{event.link}</a>
+                  </center>
                 </Panel.Body>
               </td>
               <td>
